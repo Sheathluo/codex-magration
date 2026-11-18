@@ -1,0 +1,10 @@
+AmbiguFunc/
+diagnostics/
+otfs_reproduction/
+PDF/
+
+.DS_Store
+Thumbs.db
+*.log
+*.zip
+*.bin*
