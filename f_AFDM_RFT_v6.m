@@ -1,6 +1,6 @@
 function [RFT_paramenter_esti, RFT_no_paramenter_esti, RFT_map, RFT_map_no] = f_AFDM_RFT_v6(Rx_PS_remove_GPS, ...
     Tx_signal_PS_AFDM_eff, delay_search_grid, doppler_search_grid, cfg, para)
-% V6：对发射参考做频域分数时延移位，在完整接收窗口内匹配并积累。
+% V6：批量计算频域相关与分数徙动，复用所有时延候选的参考频谱。
 % 按窗口内模板能量归一化，消除候选之间平均白噪声功率的差异。
 % 前两个输出分别为相干、非相干估计 [tau*fs_up, fd/delta_f]。
 % 第三、四输出为对应功率面，行对应时延，列对应多普勒。
@@ -26,7 +26,20 @@ function [RFT_paramenter_esti, RFT_no_paramenter_esti, RFT_map, RFT_map_no] = f_
     reference_energy = sum(abs(Tx_signal_PS_AFDM_eff).^2, 1);
     fast_time = (0:num_reference - 1).' / (para.Nc * para.L);
 
-    % 逐多普勒候选构造模板，再沿候选运动轨迹匹配。
+    % 接收频谱和初始时延的逆变换基只计算一次，供全部候选复用。
+    receive_spectrum = fft(Rx_PS_remove_GPS, fft_length, 1);
+    delay_basis = exp(2j * pi * (delay_search_grid(:) * delay_frequency.')) / fft_length;
+
+    % 窗口内模板能量也是时延的傅里叶级数。其系数由参考频谱的
+    % 非循环自相关与接收矩形窗口决定，因而无需逐时延生成时域模板。
+    energy_frequency = (0:fft_length - 1).' / fft_length;
+    window_sum = zeros(fft_length, 1);
+    window_sum(1) = num_receive;
+    window_sum(2:end) = exp(1j * pi * energy_frequency(2:end) * (num_receive - 1)) ...
+        .* sin(pi * energy_frequency(2:end) * num_receive) ./ sin(pi * energy_frequency(2:end));
+    energy_basis = exp(-2j * pi * (delay_search_grid(:) * energy_frequency.'));
+
+    % 每个候选多普勒只生成一次参考频谱，所有时延、符号一起计算。
     for doppler_idx = 1:len_doppler_search_grid
         nor_doppler = doppler_search_grid(doppler_idx);
         migration_delay = nor_doppler * migration_per_doppler;
@@ -34,23 +47,25 @@ function [RFT_paramenter_esti, RFT_no_paramenter_esti, RFT_map, RFT_map_no] = f_
         % 模板乘正号多普勒相位，相关时取共轭，与 V5 的符号内补偿约定一致。
         reference_doppler = Tx_signal_PS_AFDM_eff .* exp(2j * pi * nor_doppler * fast_time);
         reference_spectrum = fft(reference_doppler, fft_length, 1);
-        trajectory_value = zeros(len_delay_search_grid, num_symbol);
 
-        for symbol_idx = 1:num_symbol
-            query_delay = delay_search_grid(:).' + migration_delay(symbol_idx);
+        % 先在频域相乘完成相关，再用相移读取 d0 + migration_delay。
+        matched_spectrum = receive_spectrum .* conj(reference_spectrum);
+        migration_phase = exp(2j * pi * (delay_frequency * migration_delay));
+        correlation_value = delay_basis * (matched_spectrum .* migration_phase);
 
-            % 负号频域相位将参考移至 d0 + migration_delay，保留分数采样点。
-            delay_phase = exp(-2j * pi * (delay_frequency * query_delay));
-            delayed_reference = ifft(reference_spectrum(:, symbol_idx) .* delay_phase, [], 1);
-            observed_reference = delayed_reference(1:num_receive, :);
+        % 频率从负到正排列后做非循环自相关，保留真实的频率差，
+        % 避免把分数时延下相差一个采样频率的项错误合并。
+        ordered_spectrum = fftshift(reference_spectrum, 1);
+        spectrum_autocorrelation = ifft(abs(fft(ordered_spectrum, 2 * fft_length, 1)).^2, [], 1);
+        energy_coefficient = spectrum_autocorrelation(1:fft_length, :) .* window_sum;
+        % 正、负频率差互为共轭，取两倍实部；零频系数先减半以免重复。
+        energy_coefficient(1, :) = energy_coefficient(1, :) / 2;
+        energy_migration_phase = exp(-2j * pi * (energy_frequency * migration_delay));
+        observed_energy = 2 * real(energy_basis * (energy_coefficient .* energy_migration_phase)) / fft_length^2;
 
-            % 每个候选使用接收窗口内的实际模板能量，统一白噪声输出方差。
-            % 整数时延且模板完整落在窗口内时，等于 V5 的 1/(Nc*L) 相关值。
-            observed_energy = sum(abs(observed_reference).^2, 1);
-            noise_gain_scale = sqrt(reference_energy(symbol_idx) ./ observed_energy);
-            correlation_value = Rx_PS_remove_GPS(:, symbol_idx).' * conj(observed_reference);
-            trajectory_value(:, symbol_idx) = (correlation_value .* noise_gain_scale).' / (para.Nc * para.L);
-        end
+        % 与逐候选模板实现相同的能量归一化，统一白噪声输出方差。
+        noise_gain_scale = sqrt(reference_energy ./ observed_energy);
+        trajectory_value = correlation_value .* noise_gain_scale / (para.Nc * para.L);
 
         % 模板已补偿符号内多普勒，此处补偿符号间慢时间相位。
         slow_time_phase = exp(-2j * pi * nor_doppler / (para.Nc * para.L) .* symbol_sample_relative);

@@ -27,7 +27,7 @@ para.sinc_filter_len = 300;       % 插值滤波器阶数
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 para.Nsym = 100;                % 符号数/帧数
-add_noise_flag = true;         % 是否加噪 true  false
+add_noise_flag = false;         % 是否加噪 true  false
 para.SNR = -35;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

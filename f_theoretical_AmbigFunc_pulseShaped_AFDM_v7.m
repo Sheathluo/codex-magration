@@ -82,7 +82,7 @@ function E_mat = f_theoretical_AmbigFunc_pulseShaped_AFDM_v7(p, N, L, c1, mu4, t
             % ---------------- Part 1 ----------------
             % 对应原逻辑中 m = 0 的一列向量
             phase_part1 = exp(-1j * 2 * pi * v_diff * n_vec_col / N);
-            part1 = abs( phase_part1.' * inner_sum_mat(:, 1) )^2;
+            part1 = abs(phase_part1.' * inner_sum_mat(:, 1) )^2;
 
             % ---------------- Part 2 ----------------
             % 组合相位矩阵并跨维度求和
