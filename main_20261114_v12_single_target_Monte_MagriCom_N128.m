@@ -39,9 +39,9 @@ para.sinc_filter_len = 300;       % 插值滤波器阶数
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 para.Nsym = 500;                % 符号数/帧数
 add_noise_flag = true;         % 是否加噪 true
-para.SNR = -45:5:-30;
-% para.SNR = 0;
-para.Ntrial = 64;
+para.SNR = -40:5:5;
+% para.SNR = -30;
+para.Ntrial = 80;
 % 随机种子
 % rng('shuffle');
 % rng(3);
@@ -216,8 +216,8 @@ for snr_idx = 1:snr_len
     % 每个 worker 独立随机流，保证可复现且互不相关
     % rs = RandStream('Threefry', 'Seed', 1000 + snr_idx);
     tic;                    % 开始计时
-    % parfor trial_idx = 1:nTrial
-    for trial_idx = 1:nTrial
+    parfor trial_idx = 1:nTrial
+    % for trial_idx = 1:nTrial
         cfg_trail = cfg;
         % ===================== 4.1 生成感知参数 =====================
         cfg_trail.chan_coef = [1];
@@ -255,12 +255,12 @@ for snr_idx = 1:snr_len
         Th_noTarget = 1 / para.Nsym * gaminv(1 - algorithm.Pfa_target, para.Nsym, P_noise_MF);
 
         % ===================== 4.4. 感知参数接收 =====================
-        X_PS_remove_GPS = f_AFDM_Rx_preprocess_v1(Rx_echo_signal, cfg_trail, para);
+        Rx_PS_remove_GPS = f_AFDM_Rx_preprocess_v1(Rx_echo_signal, cfg_trail, para);
 
         % ===================== 4.5. AFNE徙动补偿与参数估计算法 =====================
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% （1）粗搜索 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         [ML_value_refine_set_aver, ~, Migration_non, migration_compensate_bin] = ...
-            f_AFDM_coarseRM_MF_v12(X_PS_remove_GPS, Tx_signal_PS_AFDM_eff, para, algorithm, cfg_trail);
+            f_AFDM_coarseRM_MF_v12(Rx_PS_remove_GPS, Tx_signal_PS_AFDM_eff, para, algorithm, cfg_trail);
 
         cfg_trail.migration_compensate_bin = migration_compensate_bin;
 
@@ -402,25 +402,25 @@ save(matFilePath, ...
     'RFT_channel_coef_esti_RMSE');
 
 
-% matFilePath = '/Users/luotao/Documents/Codex/codex-magration/result/2026-11-16/RMSE_result_20261116_212424.mat';
-% % matFilePath = 'E:\Codex\codex-magration\result\2026-11-16\RMSE_result_20261116_212424.mat';
-% load(matFilePath);   % 变量会直接恢复到当前工作区
-% figure;
-% semilogy(para.SNR, AFNE_delay_esti_RMSE, '-o', 'LineWidth', 1.5);
-% hold on;
-% semilogy(para.SNR, RFT_delay_esti_RMSE, 'r+-', 'LineWidth', 1.5);
-% grid on;
-% legend('AFNE','RFT');
-% xlabel('SNR (dB)');
-% ylabel('Normalized Delay RMSE');
-% title('AFNE Delay RMSE vs SNR');
-%
-% figure;
-% semilogy(para.SNR, AFNE_doppler_esti_RMSE, '-o', 'LineWidth', 1.5);
-% hold on;
-% semilogy(para.SNR, RFT_doppler_esti_RMSE, 'r+-', 'LineWidth', 1.5);
-% grid on;
-% legend('AFNE','RFT');
-% xlabel('SNR (dB)');
-% ylabel('Normalized Doppler RMSE');
-% title('AFNE Doppler RMSE vs SNR');
+% matFilePath = '/Users/luotao/Documents/Codex/codex-magration/result/2026-11-19/RMSE_result_20261119_161455.mat';
+matFilePath = 'E:\Codex\codex-magration\result\2026-11-19\RMSE_result_20261119_220653.mat';
+load(matFilePath);   % 变量会直接恢复到当前工作区
+figure;
+semilogy(para.SNR, AFNE_delay_esti_RMSE, '-o', 'LineWidth', 1.5);
+hold on;
+semilogy(para.SNR, RFT_delay_esti_RMSE, 'r+-', 'LineWidth', 1.5);
+grid on;
+legend('AFNE','RFT');
+xlabel('SNR (dB)');
+ylabel('Normalized Delay RMSE');
+title('AFNE Delay RMSE vs SNR');
+
+figure;
+semilogy(para.SNR, AFNE_doppler_esti_RMSE, '-o', 'LineWidth', 1.5);
+hold on;
+semilogy(para.SNR, RFT_doppler_esti_RMSE, 'r+-', 'LineWidth', 1.5);
+grid on;
+legend('AFNE','RFT');
+xlabel('SNR (dB)');
+ylabel('Normalized Doppler RMSE');
+title('AFNE Doppler RMSE vs SNR');

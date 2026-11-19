@@ -1,5 +1,5 @@
-close all
-clear
+% close all
+% clear
 
 sample_data_AFNE = load("result/2026-09-24/AFDM_MC_SNR_RMSE_N128_20260924_144322.mat");
 symbol_data_RFT = load("result/2026-09-24/AFDM_MC_SNR_RMSE_N128_20260924_144322.mat");
