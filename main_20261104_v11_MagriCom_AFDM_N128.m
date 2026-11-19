@@ -27,8 +27,8 @@ para.sinc_filter_len = 300;       % 插值滤波器阶数
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 para.Nsym = 100;                % 符号数/帧数
-add_noise_flag = false;         % 是否加噪 true  false
-para.SNR = 0;
+add_noise_flag = true;         % 是否加噪 true  false
+para.SNR = -35;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % 脉冲成形参数
@@ -201,7 +201,7 @@ P_noise_MF = power_noise ./ para.N;
 Th_noTarget = 1 / para.Nsym * gaminv(1 - algorithm.Pfa_target, para.Nsym, P_noise_MF);
 
 %% ===================== 7. 感知信号接收 =====================
-X_PS_remove_GPS = f_AFDM_Rx_preprocess_v1(Rx_echo_signal, cfg, para);
+Rx_PS_remove_GPS = f_AFDM_Rx_preprocess_v1(Rx_echo_signal, cfg, para);
 
 %%%%%%%%%%%%%%%%%%%%%%%%% 收发信号时域实部 %%%%%%%%%%%%%%%%%%%%%%%%
 % figure('Name', ['收发信号实部对比']);
@@ -240,29 +240,34 @@ X_PS_remove_GPS = f_AFDM_Rx_preprocess_v1(Rx_echo_signal, cfg, para);
 % delay_search_grid = cfg.min_nor_delay:rft_delay_step:cfg.max_nor_delay;
 % doppler_search_grid = cfg.min_nor_doppler:cfg.delta_fd:cfg.max_nor_doppler;
 
-% [delay_search_grid, doppler_search_grid] = f_RFT_searchRange_v1(para.SNR, cfg.delay_vec, ...
-%     cfg.doppler_vec, para.Nsym, cfg.min_nor_delay, cfg.max_nor_delay, cfg.min_nor_doppler, ...
-%     cfg.max_nor_doppler, algorithm.nor_delay_search_set, algorithm.nor_doppler_search_set);
-% 
-% [RFT_paramenter_esti, RFT_noc_paramenter_esti] = f_AFDM_RFT_v5(X_PS_remove_GPS, Tx_signal_PS_AFDM_eff, ...
-%     delay_search_grid, doppler_search_grid, cfg, para);
-% RFT_paramenter_esti
+[delay_search_grid, doppler_search_grid] = f_RFT_searchRange_v1(para.SNR, cfg.delay_vec, ...
+    cfg.doppler_vec, para.Nsym, cfg.min_nor_delay, cfg.max_nor_delay, cfg.min_nor_doppler, ...
+    cfg.max_nor_doppler, algorithm.coarse_delay_search_step, algorithm.coarse_doppler_search_step);
+
+[~, RFT_noc_paramenter_esti] = f_AFDM_RFT_v5(Rx_PS_remove_GPS, Tx_signal_PS_AFDM_eff, ...
+    delay_search_grid, doppler_search_grid, cfg, para);
+RFT_noc_paramenter_esti
+
+
+[~, RFT_no_paramenter_esti_v6, ~, ~] = f_AFDM_RFT_v6(Rx_PS_remove_GPS, ...
+    Tx_signal_PS_AFDM_eff, delay_search_grid, doppler_search_grid, cfg, para);
+RFT_no_paramenter_esti_v6
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 1.RFT算法-end %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 2.AFNE算法-start %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%% （1）粗搜索 %%%%%
-[ML_value_refine_set_aver, ~, Migration_non, migration_compensate_bin] = ...
-    f_AFDM_coarseRM_MF_v12(X_PS_remove_GPS, Tx_signal_PS_AFDM_eff, para, algorithm, cfg);
-
-cfg.migration_compensate_bin = migration_compensate_bin;
-
+% [ML_value_refine_set_aver, ~, Migration_non, migration_compensate_bin] = ...
+%     f_AFDM_coarseRM_MF_v12(X_PS_remove_GPS, Tx_signal_PS_AFDM_eff, para, algorithm, cfg);
 % 
-AFNE_parameters_esti = f_paraEstibyGradDesc_newtonOMP_multiTarget_v9( ...
-    ML_value_refine_set_aver, AmbigFunc_flip, algorithm.nor_delay_search_set, algorithm.nor_doppler_search_set, ...
-    para.N, para.L, algorithm.coarse_delay_search_step_grid, algorithm.coarse_doppler_search_step_grid, ...
-    cfg.max_nor_delay_no_upsample, cfg.max_nor_doppler_abs,algorithm.N_delay_peak, algorithm.N_doppler_peak, ...
-    para.fs_up, para.delta_f, algorithm.Num_iter_single, algorithm.Num_iter_cyclic,...
-    Th_noTarget, cfg.Max_num_target_est, para, Migration_non, cfg);
+% cfg.migration_compensate_bin = migration_compensate_bin;
+% 
+% % 
+% AFNE_parameters_esti = f_paraEstibyGradDesc_newtonOMP_multiTarget_v9( ...
+%     ML_value_refine_set_aver, AmbigFunc_flip, algorithm.nor_delay_search_set, algorithm.nor_doppler_search_set, ...
+%     para.N, para.L, algorithm.coarse_delay_search_step_grid, algorithm.coarse_doppler_search_step_grid, ...
+%     cfg.max_nor_delay_no_upsample, cfg.max_nor_doppler_abs,algorithm.N_delay_peak, algorithm.N_doppler_peak, ...
+%     para.fs_up, para.delta_f, algorithm.Num_iter_single, algorithm.Num_iter_cyclic,...
+%     Th_noTarget, cfg.Max_num_target_est, para, Migration_non, cfg);
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 2.AFNE算法-end %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

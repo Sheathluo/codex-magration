@@ -216,8 +216,8 @@ for snr_idx = 1:snr_len
     % 每个 worker 独立随机流，保证可复现且互不相关
     % rs = RandStream('Threefry', 'Seed', 1000 + snr_idx);
     tic;                    % 开始计时
-    parfor trial_idx = 1:nTrial
-    % for trial_idx = 1:nTrial
+    % parfor trial_idx = 1:nTrial
+    for trial_idx = 1:nTrial
         cfg_trail = cfg;
         % ===================== 4.1 生成感知参数 =====================
         cfg_trail.chan_coef = [1];
@@ -292,8 +292,10 @@ for snr_idx = 1:snr_len
             cfg_trail.doppler_vec, para.Nsym, cfg_trail.min_nor_delay, cfg_trail.max_nor_delay, cfg_trail.min_nor_doppler, ...
             cfg_trail.max_nor_doppler, algorithm.coarse_delay_search_step, algorithm.coarse_doppler_search_step);
 
-        [~, RFT_noc_paramenter_esti] = f_AFDM_RFT_v5(X_PS_remove_GPS, Tx_signal_PS_AFDM_eff, ...
-            delay_search_grid, doppler_search_grid, cfg_trail, para);
+        % [~, RFT_noc_paramenter_esti] = f_AFDM_RFT_v5(X_PS_remove_GPS, Tx_signal_PS_AFDM_eff, ...
+        %     delay_search_grid, doppler_search_grid, cfg_trail, para);
+        [~, RFT_noc_paramenter_esti, ~, ~] = f_AFDM_RFT_v6(Rx_PS_remove_GPS, ...
+            Tx_signal_PS_AFDM_eff, delay_search_grid, doppler_search_grid, cfg, para);
 
         % RFT_noc_paramenter_esti = [0,0];
         RFT_estimation_delay = RFT_noc_paramenter_esti(1);
