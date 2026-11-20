@@ -41,7 +41,7 @@ para.Nsym = 500;                % 符号数/帧数
 add_noise_flag = true;         % 是否加噪 true
 para.SNR = -40:5:5;
 % para.SNR = -30;
-para.Ntrial = 80;
+para.Ntrial = 700;
 % 随机种子
 % rng('shuffle');
 % rng(3);
@@ -193,6 +193,10 @@ RFT_delay_esti_matrix = zeros(size(delay_real_matrix));
 RFT_doppler_esti_matrix = zeros(size(delay_real_matrix));
 RFT_channel_coef_esti_matrix = zeros(size(delay_real_matrix));
 
+RFT_delay_esti_matrix_old = zeros(size(delay_real_matrix));
+RFT_doppler_esti_matrix_old = zeros(size(delay_real_matrix));
+RFT_channel_coef_esti_matrix_old = zeros(size(delay_real_matrix));
+
 % 每次仿真的参数估计误差
 AFNE_error_delay_matrix = zeros(size(delay_real_matrix));
 AFNE_error_doppler_matrix = zeros(size(delay_real_matrix));
@@ -201,6 +205,9 @@ RFT_error_delay_matrix = zeros(size(delay_real_matrix));
 RFT_error_doppler_matrix = zeros(size(delay_real_matrix));
 RFT_error_channel_coef_matrix = zeros(size(delay_real_matrix));
 
+RFT_error_delay_matrix_old = zeros(size(delay_real_matrix));
+RFT_error_doppler_matrix_old = zeros(size(delay_real_matrix));
+RFT_error_channel_coef_matrix_old = zeros(size(delay_real_matrix));
 
 % 每个SNR下估计误差的RMSE
 AFNE_delay_esti_RMSE = zeros(1,snr_len);
@@ -209,6 +216,10 @@ AFNE_channel_coef_esti_RMSE = zeros(1,snr_len);
 RFT_delay_esti_RMSE = zeros(1,snr_len);
 RFT_doppler_esti_RMSE = zeros(1,snr_len);
 RFT_channel_coef_esti_RMSE = zeros(1,snr_len);
+
+RFT_delay_esti_RMSE_old = zeros(1,snr_len);
+RFT_doppler_esti_RMSE_old = zeros(1,snr_len);
+RFT_channel_coef_esti_RMSE_old = zeros(1,snr_len);
 
 for snr_idx = 1:snr_len
     snr = para.SNR(snr_idx);
@@ -292,44 +303,63 @@ for snr_idx = 1:snr_len
             cfg_trail.doppler_vec, para.Nsym, cfg_trail.min_nor_delay, cfg_trail.max_nor_delay, cfg_trail.min_nor_doppler, ...
             cfg_trail.max_nor_doppler, algorithm.coarse_delay_search_step, algorithm.coarse_doppler_search_step);
 
-        % [~, RFT_noc_paramenter_esti] = f_AFDM_RFT_v5(X_PS_remove_GPS, Tx_signal_PS_AFDM_eff, ...
-        %     delay_search_grid, doppler_search_grid, cfg_trail, para);
+        [~, RFT_noc_paramenter_esti_old] = f_AFDM_RFT_v5(Rx_PS_remove_GPS, Tx_signal_PS_AFDM_eff, ...
+            delay_search_grid, doppler_search_grid, cfg_trail, para);
         [~, RFT_noc_paramenter_esti, ~, ~] = f_AFDM_RFT_v6(Rx_PS_remove_GPS, ...
-            Tx_signal_PS_AFDM_eff, delay_search_grid, doppler_search_grid, cfg, para);
+            Tx_signal_PS_AFDM_eff, delay_search_grid, doppler_search_grid, cfg_trail, para);
 
         % RFT_noc_paramenter_esti = [0,0];
         RFT_estimation_delay = RFT_noc_paramenter_esti(1);
         RFT_estimation_doppler = RFT_noc_paramenter_esti(2);
         RFT_estimation_channel_coef = 1.01;
+
+        RFT_estimation_delay_old = RFT_noc_paramenter_esti_old(1);
+        RFT_estimation_doppler_old = RFT_noc_paramenter_esti_old(2);
+        RFT_estimation_channel_coef_old = 1.01;
+
         % 保存每次仿真的估计值
         RFT_delay_esti_matrix(snr_idx, trial_idx, :) = RFT_estimation_delay;
         RFT_doppler_esti_matrix(snr_idx, trial_idx, :) = RFT_estimation_doppler;
         RFT_channel_coef_esti_matrix(snr_idx, trial_idx, :) = RFT_estimation_channel_coef;
+
+        RFT_delay_esti_matrix_old(snr_idx, trial_idx, :) = RFT_estimation_delay_old;
+        RFT_doppler_esti_matrix_old(snr_idx, trial_idx, :) = RFT_estimation_doppler_old;
+        RFT_channel_coef_esti_matrix_old(snr_idx, trial_idx, :) = RFT_estimation_channel_coef_old;
         % 保存每次估计误差
         RFT_error_delay_matrix(snr_idx, trial_idx, :) = cfg_trail.delay_vec - RFT_estimation_delay;
         RFT_error_doppler_matrix(snr_idx, trial_idx, :) = cfg_trail.doppler_vec - RFT_estimation_doppler;
         RFT_error_channel_coef_matrix(snr_idx, trial_idx, :) = cfg_trail.chan_coef - RFT_estimation_channel_coef;
 
-        % if mod(trial_idx, 10) == 0
-        %     fprintf('\nSNR=%d dB的第%d轮迭代:\n',snr, trial_idx);
-        %     fprintf('真实归一化时延= %.5f \n', cfg_trail.delay_vec);
-        %     fprintf('估计归一化时延= %.5f \n', estimation_delay);
-        %     fprintf('归一化时延估计误差 = %.5f \n', cfg_trail.delay_vec - estimation_delay);
-        %     % fprintf('\n');
-        %     fprintf('真实归一化多普勒= %.5f \n', cfg_trail.doppler_vec);
-        %     fprintf('估计归一化多普勒= %.5f \n', estimation_doppler);
-        %     fprintf('归一化多普勒估计误差 = %.5f \n', cfg_trail.doppler_vec - estimation_doppler);
-        %     % fprintf('\n');
-        %     fprintf('真实幅度= %.5f \n', cfg_trail.chan_coef);
-        %     fprintf('估计幅度= %.5f \n', estimation_channel_coef);
-        %     fprintf('幅度估计误差 = %.5f \n', cfg_trail.chan_coef - estimation_channel_coef);
-        % end
+        RFT_error_delay_matrix_old(snr_idx, trial_idx, :) = cfg_trail.delay_vec - RFT_estimation_delay_old;
+        RFT_error_doppler_matrix_old(snr_idx, trial_idx, :) = cfg_trail.doppler_vec - RFT_estimation_doppler_old;
+        RFT_error_channel_coef_matrix_old(snr_idx, trial_idx, :) = cfg_trail.chan_coef - RFT_estimation_channel_coef_old;
+
+        if mod(trial_idx, 100) == 0
+            fprintf('\nSNR = %d dB的第 %d 轮迭代:\n',snr, trial_idx);
+            fprintf('真实归一化时延 = %.5f \n', cfg_trail.delay_vec);
+            % fprintf('AFNE估计归一化时延= %.5f \n', AFNE_estimation_delay);
+            fprintf('AFNE归一化时延估计误差 = %.5f \n', cfg_trail.delay_vec - AFNE_estimation_delay);
+            fprintf('RFT归一化时延估计误差 = %.5f \n', cfg_trail.delay_vec - RFT_estimation_delay);
+            fprintf('RFT-old归一化时延估计误差 = %.5f \n', cfg_trail.delay_vec - RFT_estimation_delay_old);
+
+            % fprintf('\n');
+            fprintf('真实归一化多普勒 = %.5f \n', cfg_trail.doppler_vec);
+            % fprintf('AFNE估计归一化多普勒= %.5f \n', estimation_doppler);
+            fprintf('AFNE归一化多普勒估计误差 = %.5f \n', cfg_trail.doppler_vec - AFNE_estimation_doppler);
+            fprintf('RFT归一化多普勒估计误差 = %.5f \n', cfg_trail.doppler_vec - RFT_estimation_doppler);
+            fprintf('RFT-old归一化多普勒估计误差 = %.5f \n', cfg_trail.doppler_vec - RFT_estimation_doppler_old);
+
+            % fprintf('\n');
+            % fprintf('真实幅度= %.5f \n', cfg_trail.chan_coef);
+            % fprintf('估计幅度= %.5f \n', estimation_channel_coef);
+            % fprintf('幅度估计误差 = %.5f \n', cfg_trail.chan_coef - estimation_channel_coef);
+        end
 
     end
 
     elapsedTime = toc;      % 结束计时，返回秒数
     fprintf('\n');
-    fprintf('SNR=%d dB仿真完成，耗时: %.4f 秒\n', snr, elapsedTime);
+    
     % 计划运行的蒙特卡洛仿真次数
     % nTrial_ = 1500;
     % Estimated_time = elapsedTime * (nTrial_ / nTrial) * snr_len / 3600;
@@ -343,15 +373,30 @@ for snr_idx = 1:snr_len
     RFT_doppler_esti_RMSE = sqrt(mean(RFT_error_doppler_matrix.^2, 2));
     RFT_channel_coef_esti_RMSE = sqrt(mean(RFT_error_channel_coef_matrix.^2, 2));
 
+    RFT_delay_esti_RMSE_old = sqrt(mean(RFT_error_delay_matrix_old.^2, 2));
+    RFT_doppler_esti_RMSE_old = sqrt(mean(RFT_error_doppler_matrix_old.^2, 2));
+    RFT_channel_coef_esti_RMSE_old = sqrt(mean(RFT_error_channel_coef_matrix_old.^2, 2));
+
+    fprintf('\nSNR=%d dB仿真完成，耗时: %.4f 秒', snr, elapsedTime);
+    fprintf('\n AFNE delay RMSE = %.5f', AFNE_delay_esti_RMSE(snr_idx));
+    fprintf('\n AFNE doppler RMSE = %.5f', AFNE_doppler_esti_RMSE(snr_idx));
+
+    fprintf('\n RFT delay RMSE = %.5f', RFT_delay_esti_RMSE(snr_idx));
+    fprintf('\n RFT doppler RMSE = %.5f', RFT_doppler_esti_RMSE(snr_idx));
+
+    fprintf('\n old RFT delay RMSE = %.5f', RFT_delay_esti_RMSE_old(snr_idx));
+    fprintf('\n old RFT doppler RMSE = %.5f \n', RFT_doppler_esti_RMSE_old(snr_idx));
 end
 
-%
+
 figure;
 semilogy(para.SNR, AFNE_delay_esti_RMSE, '-o', 'LineWidth', 1.5);
 hold on;
 semilogy(para.SNR, RFT_delay_esti_RMSE, 'r+-', 'LineWidth', 1.5);
+hold on;
+semilogy(para.SNR, RFT_delay_esti_RMSE_old, 'g+-', 'LineWidth', 1.5);
 grid on;
-legend('AFNE','RFT');
+legend('AFNE','RFT','RFT-old');
 xlabel('SNR (dB)');
 ylabel('Normalized Delay RMSE');
 title('AFNE Delay RMSE vs SNR');
@@ -360,8 +405,10 @@ figure;
 semilogy(para.SNR, AFNE_doppler_esti_RMSE, '-o', 'LineWidth', 1.5);
 hold on;
 semilogy(para.SNR, RFT_doppler_esti_RMSE, 'r+-', 'LineWidth', 1.5);
+hold on;
+semilogy(para.SNR, RFT_doppler_esti_RMSE_old, 'g+-', 'LineWidth', 1.5);
 grid on;
-legend('AFNE','RFT');
+legend('AFNE','RFT','RFT-old');
 xlabel('SNR (dB)');
 ylabel('Normalized Doppler RMSE');
 title('AFNE Doppler RMSE vs SNR');
@@ -382,45 +429,38 @@ matFileName = sprintf('RMSE_result_%s.mat', timestamp);
 matFilePath = fullfile(saveFolder, matFileName);
 
 save(matFilePath, ...
-    'para',...
-    'cfg',...
-    'algorithm',...
-    'delay_real_matrix', ...
-    'doppler_real_matrix', ...
-    'channel_coef_real_matrix', ...
-    'AFNE_delay_esti_matrix', ...
-    'AFNE_doppler_esti_matrix', ...
-    'AFNE_channel_coef_esti_matrix', ...
-    'AFNE_delay_esti_RMSE',...
-    'AFNE_doppler_esti_RMSE',...
-    'AFNE_channel_coef_esti_RMSE', ...
-    'RFT_delay_esti_matrix', ...
-    'RFT_doppler_esti_matrix', ...
-    'RFT_channel_coef_esti_matrix', ...
-    'RFT_delay_esti_RMSE',...
-    'RFT_doppler_esti_RMSE',...
-    'RFT_channel_coef_esti_RMSE');
+    'para', 'cfg', 'algorithm', 'delay_real_matrix', 'doppler_real_matrix', 'channel_coef_real_matrix', ...
+    'AFNE_delay_esti_matrix', 'AFNE_doppler_esti_matrix','AFNE_channel_coef_esti_matrix', ...
+    'AFNE_delay_esti_RMSE', 'AFNE_doppler_esti_RMSE','AFNE_channel_coef_esti_RMSE', ...
+    'RFT_delay_esti_matrix', 'RFT_doppler_esti_matrix', 'RFT_channel_coef_esti_matrix', ...
+    'RFT_delay_esti_RMSE', 'RFT_doppler_esti_RMSE','RFT_channel_coef_esti_RMSE',...
+    'RFT_delay_esti_matrix_old', 'RFT_doppler_esti_matrix_old', 'RFT_channel_coef_esti_matrix_old', ...
+    'RFT_delay_esti_RMSE_old', 'RFT_doppler_esti_RMSE_old','RFT_channel_coef_esti_RMSE_old');
 
 
 % matFilePath = '/Users/luotao/Documents/Codex/codex-magration/result/2026-11-19/RMSE_result_20261119_161455.mat';
-matFilePath = 'E:\Codex\codex-magration\result\2026-11-19\RMSE_result_20261119_220653.mat';
-load(matFilePath);   % 变量会直接恢复到当前工作区
-figure;
-semilogy(para.SNR, AFNE_delay_esti_RMSE, '-o', 'LineWidth', 1.5);
-hold on;
-semilogy(para.SNR, RFT_delay_esti_RMSE, 'r+-', 'LineWidth', 1.5);
-grid on;
-legend('AFNE','RFT');
-xlabel('SNR (dB)');
-ylabel('Normalized Delay RMSE');
-title('AFNE Delay RMSE vs SNR');
-
-figure;
-semilogy(para.SNR, AFNE_doppler_esti_RMSE, '-o', 'LineWidth', 1.5);
-hold on;
-semilogy(para.SNR, RFT_doppler_esti_RMSE, 'r+-', 'LineWidth', 1.5);
-grid on;
-legend('AFNE','RFT');
-xlabel('SNR (dB)');
-ylabel('Normalized Doppler RMSE');
-title('AFNE Doppler RMSE vs SNR');
+% matFilePath = 'E:\Codex\codex-magration\result\2026-11-20\RMSE_result_20261120_105126.mat';
+% load(matFilePath);   % 变量会直接恢复到当前工作区
+% figure;
+% semilogy(para.SNR, AFNE_delay_esti_RMSE, '-o', 'LineWidth', 1.5);
+% hold on;
+% semilogy(para.SNR, RFT_delay_esti_RMSE, 'r+-', 'LineWidth', 1.5);
+% hold on;
+% semilogy(para.SNR, RFT_delay_esti_RMSE_old, 'g+-', 'LineWidth', 1.5);
+% grid on;
+% legend('AFNE','RFT','RFT-old');
+% xlabel('SNR (dB)');
+% ylabel('Normalized Delay RMSE');
+% title('AFNE Delay RMSE vs SNR');
+% 
+% figure;
+% semilogy(para.SNR, AFNE_doppler_esti_RMSE, '-o', 'LineWidth', 1.5);
+% hold on;
+% semilogy(para.SNR, RFT_doppler_esti_RMSE, 'r+-', 'LineWidth', 1.5);
+% hold on;
+% semilogy(para.SNR, RFT_doppler_esti_RMSE_old, 'g+-', 'LineWidth', 1.5);
+% grid on;
+% legend('AFNE','RFT','RFT-old');
+% xlabel('SNR (dB)');
+% ylabel('Normalized Doppler RMSE');
+% title('AFNE Doppler RMSE vs SNR');

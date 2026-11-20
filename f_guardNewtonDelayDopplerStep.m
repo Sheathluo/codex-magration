@@ -15,7 +15,7 @@ function guarded_step = f_guardNewtonDelayDopplerStep(raw_step, guard_threshold,
     if delay_step_exceeded || Doppler_step_exceeded
         step_scale = max(abs(raw_step) ./ max_guarded_step);
         guarded_step = raw_step / step_scale;
-        fprintf(['Newton异常步长保护已触发（时延超限=%d，多普勒超限=%d），' ...
-            '缩放系数= %.4f\n'], delay_step_exceeded, Doppler_step_exceeded, step_scale);
+        % fprintf(['Newton异常步长保护已触发（时延超限=%d，多普勒超限=%d），' ...
+        %     '缩放系数= %.4f\n'], delay_step_exceeded, Doppler_step_exceeded, step_scale);
     end
 end

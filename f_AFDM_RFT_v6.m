@@ -64,7 +64,8 @@ function [RFT_paramenter_esti, RFT_no_paramenter_esti, RFT_map, RFT_map_no] = f_
         observed_energy = 2 * real(energy_basis * (energy_coefficient .* energy_migration_phase)) / fft_length^2;
 
         % 与逐候选模板实现相同的能量归一化，统一白噪声输出方差。
-        noise_gain_scale = sqrt(reference_energy ./ observed_energy);
+        % noise_gain_scale = sqrt(reference_energy ./ observed_energy);
+        noise_gain_scale = 1;
         trajectory_value = correlation_value .* noise_gain_scale / (para.Nc * para.L);
 
         % 模板已补偿符号内多普勒，此处补偿符号间慢时间相位。
