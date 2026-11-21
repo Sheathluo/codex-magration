@@ -39,9 +39,9 @@ para.sinc_filter_len = 300;       % 插值滤波器阶数
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 para.Nsym = 500;                % 符号数/帧数
 add_noise_flag = true;         % 是否加噪 true
-para.SNR = -40:5:5;
-% para.SNR = -30;
-para.Ntrial = 700;
+para.SNR = -40:5:10;
+% para.SNR = -25;
+para.Ntrial = 1200;
 % 随机种子
 % rng('shuffle');
 % rng(3);
@@ -334,7 +334,7 @@ for snr_idx = 1:snr_len
         RFT_error_doppler_matrix_old(snr_idx, trial_idx, :) = cfg_trail.doppler_vec - RFT_estimation_doppler_old;
         RFT_error_channel_coef_matrix_old(snr_idx, trial_idx, :) = cfg_trail.chan_coef - RFT_estimation_channel_coef_old;
 
-        if mod(trial_idx, 100) == 0
+        if mod(trial_idx, 50) == 0
             fprintf('\nSNR = %d dB的第 %d 轮迭代:\n',snr, trial_idx);
             fprintf('真实归一化时延 = %.5f \n', cfg_trail.delay_vec);
             % fprintf('AFNE估计归一化时延= %.5f \n', AFNE_estimation_delay);
@@ -354,11 +354,10 @@ for snr_idx = 1:snr_len
             % fprintf('估计幅度= %.5f \n', estimation_channel_coef);
             % fprintf('幅度估计误差 = %.5f \n', cfg_trail.chan_coef - estimation_channel_coef);
         end
-
     end
 
     elapsedTime = toc;      % 结束计时，返回秒数
-    fprintf('\n');
+    % fprintf('\n');
     
     % 计划运行的蒙特卡洛仿真次数
     % nTrial_ = 1500;

@@ -26,9 +26,12 @@ para.B = para.fs;               % 带宽
 para.sinc_filter_len = 300;       % 插值滤波器阶数
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-para.Nsym = 100;                % 符号数/帧数
-add_noise_flag = false;         % 是否加噪 true  false
-para.SNR = -35;
+para.Nsym = 500;                % 符号数/帧数
+add_noise_flag = true;         % 是否加噪 true  false
+para.SNR = 5;
+% 随机种子
+% rng('shuffle');
+% rng(3);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % 脉冲成形参数
@@ -95,7 +98,7 @@ cfg.random_doppler_range = [-cfg.max_nor_doppler+cfg.guard_interval,  cfg.max_no
 cfg.delay_min_gap = 2;             % 多目标时，不同目标归一化时延的最小间隔
 cfg.doppler_min_gap = 2;           % 多目标时，不同目标归一化多普勒的最小间隔
 
-cfg.flag_delayMigration = 3;                    % 1: 符号级距离徙动；2: 采样点级距离徙动；3：不徙动
+cfg.flag_delayMigration = 1;                    % 1: 符号级距离徙动；2: 采样点级距离徙动；3：不徙动
 fprintf('\n================ 徙动模式 ===================\n');
 fprintf('距离徙动模式 flag_delayMigration       = %s', delayMigrationStr(cfg.flag_delayMigration));
 fprintf('\n============================================\n');
@@ -165,18 +168,14 @@ AmbigFunc_pulsedAFDM_noDelayDop = AmbigFunc_pulsedAFDM_noDelayDop / para.N^2;
 AmbigFunc_flip = AmbigFunc_flip / para.N^2;
 
 %% ===================== 4. 感知参数生成 =====================
-% 随机种子
-% rng('shuffle');
-% rng(3);
-
 % 随机生成增益，时延和多普勒
 cfg.chan_coef = [1];
-% cfg.delay_vec = f_generate_random_num_with_gap(cfg.random_delay_range, cfg.num_target, ...
-%     cfg.decimals, cfg.delay_min_gap);
-% cfg.doppler_vec = f_generate_random_num_with_gap(cfg.random_doppler_range, cfg.num_target, ...
-%     cfg.decimals, cfg.doppler_min_gap);
-cfg.delay_vec = 5.29247;
-cfg.doppler_vec = 12.35078;
+cfg.delay_vec = f_generate_random_num_with_gap(cfg.random_delay_range, cfg.num_target, ...
+    cfg.decimals, cfg.delay_min_gap);
+cfg.doppler_vec = f_generate_random_num_with_gap(cfg.random_doppler_range, cfg.num_target, ...
+    cfg.decimals, cfg.doppler_min_gap);
+
+% cfg.doppler_vec = 12.35078;
 %% ===================== 5. 发送信号生成 =====================
 % 生成该时延和多普勒条件下的目标运动轨迹
 [chan_coef, doppler_i_cal, delay_i_cal, tau_vector, true_range, true_velocity_rad, delay_max] = ...
@@ -246,28 +245,34 @@ Rx_PS_remove_GPS = f_AFDM_Rx_preprocess_v1(Rx_echo_signal, cfg, para);
 
 [~, RFT_noc_paramenter_esti] = f_AFDM_RFT_v5(Rx_PS_remove_GPS, Tx_signal_PS_AFDM_eff, ...
     delay_search_grid, doppler_search_grid, cfg, para);
-RFT_noc_paramenter_esti
-
 
 [~, RFT_no_paramenter_esti_v6, ~, ~] = f_AFDM_RFT_v6(Rx_PS_remove_GPS, ...
     Tx_signal_PS_AFDM_eff, delay_search_grid, doppler_search_grid, cfg, para);
-RFT_no_paramenter_esti_v6
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 1.RFT算法-end %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 2.AFNE算法-start %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%% （1）粗搜索 %%%%%
-% [ML_value_refine_set_aver, ~, Migration_non, migration_compensate_bin] = ...
-%     f_AFDM_coarseRM_MF_v12(X_PS_remove_GPS, Tx_signal_PS_AFDM_eff, para, algorithm, cfg);
-% 
-% cfg.migration_compensate_bin = migration_compensate_bin;
-% 
-% % 
-% AFNE_parameters_esti = f_paraEstibyGradDesc_newtonOMP_multiTarget_v9( ...
-%     ML_value_refine_set_aver, AmbigFunc_flip, algorithm.nor_delay_search_set, algorithm.nor_doppler_search_set, ...
-%     para.N, para.L, algorithm.coarse_delay_search_step_grid, algorithm.coarse_doppler_search_step_grid, ...
-%     cfg.max_nor_delay_no_upsample, cfg.max_nor_doppler_abs,algorithm.N_delay_peak, algorithm.N_doppler_peak, ...
-%     para.fs_up, para.delta_f, algorithm.Num_iter_single, algorithm.Num_iter_cyclic,...
-%     Th_noTarget, cfg.Max_num_target_est, para, Migration_non, cfg);
+[ML_value_refine_set_aver, ~, Migration_non, migration_compensate_bin] = ...
+    f_AFDM_coarseRM_MF_v12(Rx_PS_remove_GPS, Tx_signal_PS_AFDM_eff, para, algorithm, cfg);
 
+cfg.migration_compensate_bin = migration_compensate_bin;
+
+% 
+AFNE_parameters_esti = f_paraEstibyGradDesc_newtonOMP_single_trarget_v9( ...
+    ML_value_refine_set_aver, AmbigFunc_flip, algorithm.nor_delay_search_set, algorithm.nor_doppler_search_set, ...
+    para.N, para.L, algorithm.coarse_delay_search_step_grid, algorithm.coarse_doppler_search_step_grid, ...
+    cfg.max_nor_delay_no_upsample, cfg.max_nor_doppler_abs,algorithm.N_delay_peak, algorithm.N_doppler_peak, ...
+    para.fs_up, para.delta_f, algorithm.Num_iter_single, algorithm.Num_iter_cyclic,...
+    Th_noTarget, cfg.Max_num_target_est, para, Migration_non, cfg);
+
+fprintf('AFNE归一化时延估计误差 = %.5f \n', cfg.delay_vec - AFNE_parameters_esti(1));
+fprintf('AFNE归一化多普勒估计误差 = %.5f \n', cfg.doppler_vec - AFNE_parameters_esti(2));
+
+fprintf('RFT归一化时延估计误差 = %.5f \n', cfg.delay_vec - RFT_no_paramenter_esti_v6(1));
+fprintf('RFT归一化多普勒估计误差 = %.5f \n', cfg.doppler_vec - RFT_no_paramenter_esti_v6(2));
+
+fprintf('RFT-old归一化时延估计误差 = %.5f \n', cfg.delay_vec - RFT_noc_paramenter_esti(1));
+fprintf('RFT-old归一化多普勒估计误差 = %.5f \n', cfg.doppler_vec - RFT_noc_paramenter_esti(2));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 2.AFNE算法-end %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
