@@ -42,7 +42,9 @@ function [RxSignal, multiPathSignals, signalPower, noisePower] = f_time_vary_cha
 %                                  2. 实现过信道后的信号输入输出长度不一样
 %  v4    2026-06-16     [罗韬]     [修改内容:
 %                                  1. 增加是否加噪标志位
-%  v5    2026-07-08     [Codex]    [保持归一化 Doppler 输入，将 Doppler 单位转换整合到相位施加处]
+%  v5    2026-07-08     [Codex]   [修改内容:保持归一化 Doppler 输入，将 Doppler 单位转换整合到相位施加处]
+%  v6    2026-11-24     [罗韬]     [修改内容:改用f_tv_delay_intfrac_v4，避免内存溢出]
+%  ---------------------------------------------------------------------------------
 
     pathNorDopplers = pathNorDopplers(:);
 
@@ -69,7 +71,10 @@ function [RxSignal, multiPathSignals, signalPower, noisePower] = f_time_vary_cha
         % delaysCrishift(p, :) = maxDelays(p, :);
 
         % 2. 逐点实现分数时延，以适配时变时延。
-        fracDelayedSignal = f_tv_delay_intfrac_v3(IntDelayedSignal, ...
+        % fracDelayedSignal = f_tv_delay_intfrac_v3(IntDelayedSignal, ...
+        %     delaysCrishift(p, :), sincFilterLen);
+        % v4版本占用更少内存
+        fracDelayedSignal4 = f_tv_delay_intfrac_v4(IntDelayedSignal, ...
             delaysCrishift(p, :), sincFilterLen);
 
         % 3. 多普勒频移

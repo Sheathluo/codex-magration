@@ -41,10 +41,10 @@ para.sinc_filter_len = 300;     % 插值滤波器阶数
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 para.Nsym = 200;                % 符号数/帧数
-add_noise_flag = true;         % 是否加噪 true
-para.SNR = -40:5:10;
-% para.SNR = -25;
-para.Ntrial = 16;
+add_noise_flag = false;         % 是否加噪 true false
+% para.SNR = -40:5:10;
+para.SNR = 5;
+para.Ntrial = 1;
 % 随机种子
 % rng('shuffle');
 % rng(3);
@@ -233,8 +233,8 @@ for snr_idx = 1:snr_len
     % 每个 worker 独立随机流，保证可复现且互不相关
     % rs = RandStream('Threefry', 'Seed', 1000 + snr_idx);
     tic;                    % 开始计时
-    parfor trial_idx = 1:nTrial
-    % for trial_idx = 1:nTrial
+    % parfor trial_idx = 1:nTrial
+    for trial_idx = 1:nTrial
         cfg_trail = cfg;
         % ===================== 4.1 生成感知参数 =====================
         cfg_trail.chan_coef = [1];
