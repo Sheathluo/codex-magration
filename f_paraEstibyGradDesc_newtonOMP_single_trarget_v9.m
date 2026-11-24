@@ -100,6 +100,9 @@ function [set_nor_parameters_esti] = f_paraEstibyGradDesc_newtonOMP_single_trarg
     newton_step_guard_threshold = [delay_grid_step; Doppler_grid_step];
     max_guarded_newton_step = 0.5 * newton_step_guard_threshold;
 
+    % 先对模糊函数做FFT
+    AFDM_AF_F = fft(AmbigFunc_pulsedAFDM_noDelayDop, [], 1);
+
     %% 2. OMP 检测、Newton 精估计和循环 SIC
     while Num_detected_target < Max_num_target
         %% 2.1 在当前残差面中检测最大峰值
@@ -134,7 +137,7 @@ function [set_nor_parameters_esti] = f_paraEstibyGradDesc_newtonOMP_single_trarg
         % zlabel('Normalized average squared MF');
         % set(gca, 'FontSize', 10);
         % title('截取出的粗补偿徙动后实际匹配滤波');
-        %
+        % 
         % figure;
         % [X, Y] = meshgrid(index_Doppler_set_fracEst, index_delay_set_fracEst);
         % mesh(X, Y, 10 * log10(D_func_migration / max(max(D_func_migration))));
@@ -165,12 +168,21 @@ function [set_nor_parameters_esti] = f_paraEstibyGradDesc_newtonOMP_single_trarg
 
         for iter = 1:max_newton_iter
             % 梯度函数返回局部模型相对 delay/Doppler 的一阶和二阶信息。
+            % tic;
             [Ja_matrix, He_matrix] = f_grad2DAmbigFunc_dealyDoppler_noParfor_newton_v8( ...
                 tau_prev, doppler_prev, AmbigFunc_pulsedAFDM_noDelayDop, D_func, nor_tau_list, ...
                 nor_v_list, index_delay_set_fracEst, index_Doppler_set_fracEst, Ts, delta_f, ...
                 Delta_tau, Delta_v, N, L, L_delay, L_Doppler, L_delay_noDelayDop, ...
                 L_Doppler_noDelayDop, max_norDelay, max_norDoppler, P_prev, para, D_func, cfg);
+            % elapsedTime = toc      % 结束计时，返回秒数
 
+            % tic;
+            % [Ja_matrix, He_matrix] = f_grad2DAmbigFunc_dealyDoppler_noParfor_newton_v9( ...
+            %     tau_prev, doppler_prev, AFDM_AF_F, D_func, nor_tau_list, ...
+            %     nor_v_list, index_delay_set_fracEst, index_Doppler_set_fracEst, Ts, delta_f, ...
+            %     Delta_tau, Delta_v, N, L, L_delay, L_Doppler, L_delay_noDelayDop, ...
+            %     L_Doppler_noDelayDop, max_norDelay, max_norDoppler, P_prev, para, D_func, cfg);
+            % elapsedTime = toc      % 结束计时，返回秒数
             %%%%%%%%%%%%%%%%%%%% 检查海森矩阵是否正定 %%%%%%%%%%%%%%%%%%%%%%
             % hessian_type = f_isPositiveDefiniteHessian(-He_matrix)
             % eig_H = eig(-He_matrix)
@@ -284,37 +296,6 @@ function [set_nor_parameters_esti] = f_paraEstibyGradDesc_newtonOMP_single_trarg
             % set(gca, 'FontSize', 10);
             % title('移位后理论模糊函数');
 
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            % save_file = 'ERR_result.mat';
-            % var_name  = 'data_cube';
-            %
-            % new_matrix = err;   % 每次的二维矩阵
-            %
-            % if exist(save_file, 'file')
-            %     S = load(save_file);
-            %     data_cube = S.data_cube;
-            %     data_cube(:, :, end+1) = new_matrix;
-            % else
-            %     data_cube = new_matrix;
-            % end
-            %
-            % save(save_file, var_name);
-            %
-            % S = load('ERR_result.mat');
-            % data_cube = S.data_cube;
-            % junzhi = mean(data_cube,3);
-            %
-            %
-            % figure;
-            % [X, Y] = meshgrid(index_Doppler_set_fracEst, index_delay_set_fracEst);
-            % mesh(X, Y, junzhi);
-            % ylabel('Normalized delay $\tau$', 'Interpreter', 'latex');
-            % xlabel('Normalized Doppler $\nu$', 'Interpreter', 'latex');
-            % zlabel('Normalized average squared MF');
-            % set(gca, 'FontSize', 10);
-            % title('残差均值');
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
             P_new = sum(D_func .* echo_local, "all") ./ norm(echo_local, 'fro')^2;
             % P_new = 1;
             cost = norm(D_func - P_new * echo_local, 'fro')^2;
@@ -325,20 +306,20 @@ function [set_nor_parameters_esti] = f_paraEstibyGradDesc_newtonOMP_single_trarg
             P_prev = P_new;
 
             % if mod(iter, 2) == 1
-            % if mod(iter, 1) == 0
-            %     fprintf('\n第%d轮迭代:\n', iter);
-            %     fprintf('真实归一化时延= %.5f \n', cfg.delay_vec(1));
-            %     fprintf('估计归一化时延= %.5f \n', tau_prev);
-            %     fprintf('归一化时延估计误差 = %.5f \n', cfg.delay_vec(1) - tau_prev);
-            %
-            %     fprintf('真实归一化多普勒= %.5f \n', cfg.doppler_vec(1));
-            %     fprintf('估计归一化多普勒= %.5f \n', doppler_prev);
-            %     fprintf('归一化多普勒估计误差 = %.5f \n', cfg.doppler_vec(1) - doppler_prev);
-            %
-            %     fprintf('估计幅度= %.5f \n', P_prev);
-            %     fprintf('三个估计误差的范数 = %.13f \n', del_iter);
-            %     fprintf('损失值 = %.6f \n', cost);
-            % end
+            if mod(iter, 1) == 0
+                fprintf('\n第%d轮迭代:\n', iter);
+                fprintf('真实归一化时延= %.5f \n', cfg.delay_vec(1));
+                fprintf('估计归一化时延= %.5f \n', tau_prev);
+                fprintf('归一化时延估计误差 = %.5f \n', cfg.delay_vec(1) - tau_prev);
+
+                fprintf('真实归一化多普勒= %.5f \n', cfg.doppler_vec(1));
+                fprintf('估计归一化多普勒= %.5f \n', doppler_prev);
+                fprintf('归一化多普勒估计误差 = %.5f \n', cfg.doppler_vec(1) - doppler_prev);
+
+                fprintf('估计幅度= %.5f \n', P_prev);
+                fprintf('三个估计误差的范数 = %.13f \n', del_iter);
+                fprintf('损失值 = %.6f \n', cost);
+            end
 
             if del_iter < 1e-13
                 break;

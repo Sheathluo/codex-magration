@@ -16,19 +16,19 @@ para.c = 3e8;
 % 系统基本参数
 para.fc = 11.7e9;
 para.lambda = para.c/para.fc;
-para.fs_up = 10e6;              % 上采样后采样率
-% para.fs_up = 240e6;            % 上采样后采样率
+% para.fs_up = 10e6;              % 上采样后采样率
+para.fs_up = 240e6;           % 上采样后采样率
 para.L = 2;                     % 过采样倍数
 para.L_delay = para.L;          % 理论模糊函数的时延维过采样倍数
 para.L_doppler = para.L;        % 理论模糊函数/接收搜索的多普勒维过采样倍数
 para.fs = para.fs_up / para.L;  % 采样率
 para.Ts = 1/para.fs_up;         % 采样间隔
 para.B = para.fs;               % 带宽
-para.sinc_filter_len = 300;       % 插值滤波器阶数
+para.sinc_filter_len = 300;     % 插值滤波器阶数
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-para.Nsym = 200;                % 符号数/帧数
-add_noise_flag = true;         % 是否加噪 true  false
+para.Nsym = 500;                % 符号数/帧数
+add_noise_flag = false;          % 是否加噪 true  false
 para.SNR = 5;
 % 随机种子
 % rng('shuffle');
@@ -36,13 +36,13 @@ para.SNR = 5;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % 脉冲成形参数
-% para.beta = 0.35;               % RRC/RC 滚降因子
+% para.beta = 0.35;             % RRC/RC 滚降因子
 para.beta = 0.25;               % RRC/RC 滚降因子
 para.N_preSuffix = 20;          % 每个 AFDM 符号前后额外保护点长度
 para.N_tapFiler = 20;           % 成形滤波器半边抽头参数
 
 % AFDM 基本参数
-% para.Nc = 128;                  % 子载波数
+% para.Nc = 128;                 % 子载波数
 para.Nc = 1024;                  % 子载波数
 % para.c1 = 8 / (2 * para.Nc);    % c1
 para.c1 = 11 / (2 * para.Nc);    % c1
@@ -82,7 +82,7 @@ cfg.index_start = 0;            % 接收信号起始截取点
 % 感知信道目标信道参数
 cfg.Max_num_target_est = 1;       % 接收端 OMP 最多检测目标数，不一定等于真实目标数
 cfg.num_target = 1;             % 目标数
-cfg.max_nor_doppler_abs = 15;       % 接收端粗搜索最大归一化多普勒, 实际产生的多普勒是cfg.max_norDoppler-5，累积到雷达图边缘
+cfg.max_nor_doppler_abs = 10;       % 接收端粗搜索最大归一化多普勒, 实际产生的多普勒是cfg.max_norDoppler-5，累积到雷达图边缘
 cfg.max_nor_delay_no_upsample = para.Ncp - 1;
 cfg.max_nor_delay = cfg.max_nor_delay_no_upsample * para.L - 1;  % 接收端粗搜索最大归一化时延（过采样后）
 cfg.min_nor_delay = 0;                      % 接收端粗搜索最小归一化时延
@@ -91,7 +91,7 @@ cfg.min_nor_doppler = -cfg.max_nor_doppler_abs * para.L / 2;
 cfg.max_nor_doppler = cfg.max_nor_doppler_abs * para.L / 2 - 1 / para.L_doppler;
 
 cfg.decimals = 5;               % 时延和多普勒保留小数位数
-cfg.guard_interval = 5;         % 时延和多普勒的保护间隔
+cfg.guard_interval = 2;         % 时延和多普勒的保护间隔
 % 归一化时延随机范围
 cfg.random_delay_range = [cfg.guard_interval, para.Ncp-cfg.guard_interval];
 % 归一化多普勒随机范围
@@ -99,7 +99,7 @@ cfg.random_doppler_range = [-cfg.max_nor_doppler+cfg.guard_interval,  cfg.max_no
 cfg.delay_min_gap = 2;             % 多目标时，不同目标归一化时延的最小间隔
 cfg.doppler_min_gap = 2;           % 多目标时，不同目标归一化多普勒的最小间隔
 
-cfg.flag_delayMigration = 1;                    % 1: 符号级距离徙动；2: 采样点级距离徙动；3：不徙动
+cfg.flag_delayMigration = 3;                    % 1: 符号级距离徙动；2: 采样点级距离徙动；3：不徙动
 fprintf('\n================ 徙动模式 ===================\n');
 fprintf('距离徙动模式 flag_delayMigration       = %s', delayMigrationStr(cfg.flag_delayMigration));
 fprintf('\n============================================\n');
@@ -171,12 +171,15 @@ AmbigFunc_flip = AmbigFunc_flip / para.N^2;
 %% ===================== 4. 感知参数生成 =====================
 % 随机生成增益，时延和多普勒
 cfg.chan_coef = [1];
-cfg.delay_vec = f_generate_random_num_with_gap(cfg.random_delay_range, cfg.num_target, ...
-    cfg.decimals, cfg.delay_min_gap);
-cfg.doppler_vec = f_generate_random_num_with_gap(cfg.random_doppler_range, cfg.num_target, ...
-    cfg.decimals, cfg.doppler_min_gap);
-
-% cfg.doppler_vec = 12.35078;
+% cfg.delay_vec = f_generate_random_num_with_gap(cfg.random_delay_range, cfg.num_target, ...
+%     cfg.decimals, cfg.delay_min_gap);
+% cfg.doppler_vec = f_generate_random_num_with_gap(cfg.random_doppler_range, cfg.num_target, ...
+%     cfg.decimals, cfg.doppler_min_gap);
+cfg.delay_vec = 15.5693;
+% cfg.doppler_vec = 0.1686;
+cfg.doppler_vec = 7.1686;
+% cfg.delay_vec = 0;
+% cfg.doppler_vec = 0;
 %% ===================== 5. 发送信号生成 =====================
 % 生成该时延和多普勒条件下的目标运动轨迹
 [chan_coef, doppler_i_cal, delay_i_cal, tau_vector, true_range, true_velocity_rad, delay_max] = ...
@@ -205,27 +208,27 @@ Rx_PS_remove_GPS = f_AFDM_Rx_preprocess_v1(Rx_echo_signal, cfg, para);
 
 %%%%%%%%%%%%%%%%%%%%%%%%% 收发信号时域实部 %%%%%%%%%%%%%%%%%%%%%%%%
 % figure('Name', ['收发信号实部对比']);
-% stem(real(Rx_echo_signal(1:2000)), '--r');
-% hold on;
 % stem(real(Tx_signal(1:2000)), '-bo');
-% legend('Rx','Tx');
-% % title('收发信号实部对比');
-% %%%%%%%%%%%%%%%%%%%%%%%%% 收发信号时域实部 %%%%%%%%%%%%%%%%%%%%%%%%
-%
-% %%%%%%%%%%%%%%%%%%%%%%%%% 收发信号频谱 %%%%%%%%%%%%%%%%%%%%%%%%
+% hold on;
+% stem(real(Rx_echo_signal(1:2000)), '--r');
+% legend('Tx','Rx');
+% title('收发信号实部对比');
+%%%%%%%%%%%%%%%%%%%%%%%%% 收发信号时域实部 %%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%% 收发信号频谱 %%%%%%%%%%%%%%%%%%%%%%%%
 % length_rx = length(Rx_echo_signal);
 % f_tx = (-para.len_signal/2:(para.len_signal/2-1))*(para.fs/para.len_signal);
 % f_rx = (-length_rx/2:(length_rx/2-1))*(para.fs/length_rx);
-%
+% 
 % Freq_tx_signal = abs(fftshift(fft(Tx_signal)));
 % Freq_rx_signal = abs(fftshift(fft(Rx_echo_signal)));
-%
+% 
 % figure('Name', ['收发信号频谱对比']);
 % plot(f_rx, 20*log10(Freq_rx_signal/max(Freq_rx_signal)), '-bo');  hold on;
 % plot(f_tx, 20*log10(Freq_tx_signal/max(Freq_tx_signal)), '-ro');
 % ylim([-150,5]);
 % legend('Rx','Tx');
-% % title('收发信号频谱对比');
+% title('收发信号频谱对比');
 %%%%%%%%%%%%%%%%%%%%%%%%% 收发信号频谱 %%%%%%%%%%%%%%%%%%%%%%%%
 
 %% ===================== 8. 徙动补偿与参数估计算法 =====================
@@ -240,16 +243,17 @@ Rx_PS_remove_GPS = f_AFDM_Rx_preprocess_v1(Rx_echo_signal, cfg, para);
 % delay_search_grid = cfg.min_nor_delay:rft_delay_step:cfg.max_nor_delay;
 % doppler_search_grid = cfg.min_nor_doppler:cfg.delta_fd:cfg.max_nor_doppler;
 
-[delay_search_grid, doppler_search_grid] = f_RFT_searchRange_v1(para.SNR, cfg.delay_vec, ...
-    cfg.doppler_vec, para.Nsym, cfg.min_nor_delay, cfg.max_nor_delay, cfg.min_nor_doppler, ...
-    cfg.max_nor_doppler, algorithm.coarse_delay_search_step, algorithm.coarse_doppler_search_step);
+% [delay_search_grid, doppler_search_grid] = f_RFT_searchRange_v1(para.SNR, cfg.delay_vec, ...
+%     cfg.doppler_vec, para.Nsym, cfg.min_nor_delay, cfg.max_nor_delay, cfg.min_nor_doppler, ...
+%     cfg.max_nor_doppler, algorithm.coarse_delay_search_step, algorithm.coarse_doppler_search_step);
+% 
+% [~, RFT_noc_paramenter_esti] = f_AFDM_RFT_v5(Rx_PS_remove_GPS, Tx_signal_PS_AFDM_eff, ...
+%     delay_search_grid, doppler_search_grid, cfg, para);
+RFT_noc_paramenter_esti = [0,0];
 
-[~, RFT_noc_paramenter_esti] = f_AFDM_RFT_v5(Rx_PS_remove_GPS, Tx_signal_PS_AFDM_eff, ...
-    delay_search_grid, doppler_search_grid, cfg, para);
-
-[~, RFT_no_paramenter_esti_v6, ~, ~] = f_AFDM_RFT_v6(Rx_PS_remove_GPS, ...
-    Tx_signal_PS_AFDM_eff, delay_search_grid, doppler_search_grid, cfg, para);
-
+% [~, RFT_no_paramenter_esti_v6, ~, ~] = f_AFDM_RFT_v6(Rx_PS_remove_GPS, ...
+%     Tx_signal_PS_AFDM_eff, delay_search_grid, doppler_search_grid, cfg, para);
+RFT_no_paramenter_esti_v6 = [0,0];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 1.RFT算法-end %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 2.AFNE算法-start %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -259,7 +263,6 @@ Rx_PS_remove_GPS = f_AFDM_Rx_preprocess_v1(Rx_echo_signal, cfg, para);
 
 cfg.migration_compensate_bin = migration_compensate_bin;
 
-% 
 AFNE_parameters_esti = f_paraEstibyGradDesc_newtonOMP_single_trarget_v9( ...
     ML_value_refine_set_aver, AmbigFunc_flip, algorithm.nor_delay_search_set, algorithm.nor_doppler_search_set, ...
     para.N, para.L, algorithm.coarse_delay_search_step_grid, algorithm.coarse_doppler_search_step_grid, ...

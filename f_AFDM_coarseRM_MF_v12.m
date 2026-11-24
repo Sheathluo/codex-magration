@@ -58,25 +58,25 @@ function [ML_value_refine_set_aver, est_dop_RM_max, Migration_non, migration_com
     % [~, ~, max_page_ML] = ind2sub(size(ML_value_all), max_idx_ML);
     Migration_non = sum(abs(ML_value_all).^2, 3) ./ para.Nsym;
 
-    % figure;
-    % [X, Y] = meshgrid(algorithm.nor_doppler_search_set, algorithm.nor_delay_search_set);
-    % mesh(X, Y, 10 * log10(abs(ML_value_all(:,:,1)) / max(max(abs(ML_value_all(:,:,1))))));
-    % ylabel('Normalized delay $\tau$', 'Interpreter', 'latex');
-    % xlabel('Normalized Doppler $\nu$', 'Interpreter', 'latex');
-    % zlabel('Normalized average squared MF');
-    % set(gca, 'FontSize', 10);
-    % % axis([-inf inf -inf inf -40 2]);
-    % title('接收回波匹配滤波结果-粗估计函数');
-    %
-    % figure;
-    % [X, Y] = meshgrid(algorithm.nor_doppler_search_set, algorithm.nor_delay_search_set);
-    % mesh(X, Y, 10 * log10(Migration_non / max(max(Migration_non))));
-    % ylabel('Normalized delay $\tau$', 'Interpreter', 'latex');
-    % xlabel('Normalized Doppler $\nu$', 'Interpreter', 'latex');
-    % zlabel('Normalized average squared MF');
-    % set(gca, 'FontSize', 10);
-    % % axis([-inf inf -inf inf -40 2]);
-    % title('接收回波匹配滤波结果-粗估计函数');
+    figure;
+    [X, Y] = meshgrid(algorithm.nor_doppler_search_set, algorithm.nor_delay_search_set);
+    mesh(X, Y, 10 * log10(abs(ML_value_all(:,:,1)) / max(max(abs(ML_value_all(:,:,1))))));
+    ylabel('Normalized delay $\tau$', 'Interpreter', 'latex');
+    xlabel('Normalized Doppler $\nu$', 'Interpreter', 'latex');
+    zlabel('Normalized average squared MF');
+    set(gca, 'FontSize', 10);
+    % axis([-inf inf -inf inf -40 2]);
+    title('接收回波匹配滤波结果-粗估计函数');
+
+    figure;
+    [X, Y] = meshgrid(algorithm.nor_doppler_search_set, algorithm.nor_delay_search_set);
+    mesh(X, Y, 10 * log10(Migration_non / max(max(Migration_non))));
+    ylabel('Normalized delay $\tau$', 'Interpreter', 'latex');
+    xlabel('Normalized Doppler $\nu$', 'Interpreter', 'latex');
+    zlabel('Normalized average squared MF');
+    set(gca, 'FontSize', 10);
+    % axis([-inf inf -inf inf -40 2]);
+    title('接收回波匹配滤波结果-粗估计函数');
 
     % 如果设置不徙动，直接返回匹配滤波结果
     if cfg.flag_delayMigration == 3
@@ -117,9 +117,10 @@ function [ML_value_refine_set_aver, est_dop_RM_max, Migration_non, migration_com
         end
 
     end
-    % 未来防止符号数太短，根本不会导致徙动而出现的bug，如果符号很少，完全不导致徙动，
+    % 为了防止符号数太短，根本不会导致徙动而出现的bug，如果符号很少，完全不导致徙动，
     % 那就直接搜索所都有的多普勒
     if isempty(Nor_doppler_Search_real)
+        fprintf("符号太少，归一化多普勒太小，未出现徙动")
         Nor_doppler_Search_real = Nor_doppler_Search_set;
     end
     % 提前定义不同多普勒补偿后的功率面
@@ -203,16 +204,15 @@ function [ML_value_refine_set_aver, est_dop_RM_max, Migration_non, migration_com
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         % figure;
-        % [X, Y] = meshgrid(Nor_doppler_Search_set, Nor_delay_Search_set);
-        % mesh(X, Y, 10 * log10(ML_value_refine_set_aver_ / max(max(ML_value_refine_set_aver_))));
+        % [X, Y] = meshgrid(algorithm.nor_doppler_search_set, algorithm.nor_delay_search_set);
+        % mesh(X, Y, 10 * log10(ML_value_refine_seg / max(max(ML_value_refine_seg))));
         % % mesh(X, Y, ML_value_refine_set_aver);
         % ylabel('Normalized delay $\tau$', 'Interpreter', 'latex');
         % xlabel('Normalized Doppler $\nu$', 'Interpreter', 'latex');
         % zlabel('Normalized average squared MF');
         % set(gca, 'FontSize', 10);
-        % % axis([-inf inf -inf inf -40 2]);
         % title('实际匹配滤波结果-非相干累积');
-        %
+
         % figure;
         % mesh(X, Y, 10 * log10(ML_value_coh / max(max(ML_value_coh))));
         % % mesh(X, Y, ML_value_refine_set_aver_co);
@@ -222,7 +222,7 @@ function [ML_value_refine_set_aver, est_dop_RM_max, Migration_non, migration_com
         % set(gca, 'FontSize', 10);
         % axis([-inf inf -inf inf -60 2]);
         % title('实际匹配滤波结果-相干累积');
-        %
+
         % figure;
         % mesh(X, Y, 10 * log10(ML_value_refine_seg / max(max(ML_value_refine_seg))));
         % % mesh(X, Y, ML_value_refine_set_aver_co);
@@ -295,16 +295,16 @@ function [ML_value_refine_set_aver, est_dop_RM_max, Migration_non, migration_com
     %%%%%%%%%%%%%%%%%%%%%%% 分段相干累积 %%%%%%%%%%%%%%%%%%%%%%%%%%
     %}
 
-    % figure;
-    % [X, Y] = meshgrid(algorithm.nor_doppler_search_set, algorithm.nor_delay_search_set);
-    % mesh(X, Y, 10 * log10(ML_value_refine_set_aver / max(max(ML_value_refine_set_aver))));
-    % % mesh(X, Y, ML_value_refine_set_aver);
-    % ylabel('Normalized delay $\tau$', 'Interpreter', 'latex');
-    % xlabel('Normalized Doppler $\nu$', 'Interpreter', 'latex');
-    % zlabel('Normalized average squared MF');
-    % set(gca, 'FontSize', 10);
-    % title('最大值-补偿徙动后-非相干累积-粗估计函数');
-    %
+    figure;
+    [X, Y] = meshgrid(algorithm.nor_doppler_search_set, algorithm.nor_delay_search_set);
+    mesh(X, Y, 10 * log10(ML_value_refine_set_aver / max(max(ML_value_refine_set_aver))));
+    % mesh(X, Y, ML_value_refine_set_aver);
+    ylabel('Normalized delay $\tau$', 'Interpreter', 'latex');
+    xlabel('Normalized Doppler $\nu$', 'Interpreter', 'latex');
+    zlabel('Normalized average squared MF');
+    set(gca, 'FontSize', 10);
+    title('最大值-补偿徙动后-非相干累积-粗估计函数');
+    % 
     % figure;
     % [X, Y] = meshgrid(algorithm.nor_doppler_search_set, algorithm.nor_delay_search_set);
     % mesh(X, Y, 10 * log10(ML_value_coh / max(max(ML_value_coh))));

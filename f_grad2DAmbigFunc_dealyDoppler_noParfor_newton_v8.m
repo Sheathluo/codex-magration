@@ -110,6 +110,7 @@ function [J, H, response_migration] = f_grad2DAmbigFunc_dealyDoppler_noParfor_ne
     unique_shift = unique(compensation_shift, 'rows', 'stable');
 
     for idx_shift = 1:size(unique_shift, 1)
+        tic
         shift_curr = unique_shift(idx_shift, :);
         group_mask = compensation_shift(:, 1) == shift_curr(1) & ...
             compensation_shift(:, 2) == shift_curr(2);
@@ -150,6 +151,7 @@ function [J, H, response_migration] = f_grad2DAmbigFunc_dealyDoppler_noParfor_ne
         response_search_stack = response_stack(delay_range, doppler_range, :);
         response_search_stack = circshift(response_search_stack, [shift_curr(1), shift_curr(2), 0]);
         response_acc = response_acc + response_search_stack;
+        elapsedTime = toc
     end
 
     response_acc = response_acc / para.Nsym;
