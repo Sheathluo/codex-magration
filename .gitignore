@@ -6,5 +6,6 @@ PDF/
 .DS_Store
 Thumbs.db
 *.log
+*.asv
 *.zip
 *.bin*

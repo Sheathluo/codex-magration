@@ -7,19 +7,19 @@ clear
 % close all
 
 %% 物理常数
-c = physconst('LightSpeed');
+c = 3e8;
 k = 1.38e-23;                   % 波尔茨曼常数
 
 %% 信号参数
 wave_para = 1;
 if wave_para == 1
     % 星链下行链路，面向星链专用的相控阵终端
-    fc = 11e9;
+    fc = 11.7e9;
     lambda = c/fc;
     N = 1024;                   % 子载波数
-    alpha = 0.25;               % 滚降因子 3G WCDMA 明确写死：RRC α = 0.22（TS 25.104/25.213 一脉相承）
-    L = 2;                      % 过采样倍数
-    B = 100e6;
+    alpha = 0;               % 滚降因子 3G WCDMA 明确写死：RRC α = 0.22（TS 25.104/25.213 一脉相承）原值0.25
+    L = 1;                      % 过采样倍数
+    B = 240e6;
     fs = L*B*(1+alpha);
     delta_f = B/N;  % 子载波间隔
     Ncp = 32;
@@ -76,11 +76,11 @@ elseif object == 4
     % Range = 330e3; % 战斗机飞行最高飞行20km
     % 假设卫星高度480km。星链Gen2 V2 Mini ~480km, 星链Gen2手机直连D2C ~350-360km,Gen2
     % 新规划的极低轨道~326-345km
-    Range_sate2fighter = 460e3; % 卫星到目标的距离
+    Range_sate2fighter = 466e3; % 卫星到目标的距离
     Range_fighter2radar = 100e3; % 目标到雷达的距离，一般机载雷达的感知距离
     Range = sqrt(Range_sate2fighter * Range_fighter2radar);
-    Range_seta2rx = sqrt(Range_sate2fighter^2+Range_fighter2radar^2);
-    velocity = 0.51e3; % 速度 2马赫
+    % Range_seta2rx = sqrt(Range_sate2fighter^2+Range_fighter2radar^2);
+    velocity = 0.681e3; % 速度 2马赫
     % 环境参数
     Temperature = 216;              % 高空的温度
     % tau_ = Range / c * 1e3
@@ -97,13 +97,14 @@ Gt_linear = 10^(Gt_dB/10);
 Gr_dB = 34;                  % 接收端天线带增益(dB)
 Gr_linear = 10^(Gr_dB/10);
 %% 发射端的EIRP
-EIRP_dBm = P_t_dBm+Gt_dB;                       % 单位dBm EIRP(dBm) = P_T(dBm)+Gt(dB)
+% EIRP_dBm = P_t_dBm+Gt_dB;                       % 单位dBm EIRP(dBm) = P_T(dBm)+Gt(dB)
+EIRP_dBm = 39 + 30;
 EIRP_linear = 10^((EIRP_dBm-30)/10);            % 单位W
 %% 处理损耗
-L_dB = 10;
+L_dB = 3;
 L = 10^(L_dB/10);
 %% 噪声系数
-NF_dB = 3;                  % 典型接收机噪声系数2.5~3.5
+NF_dB = 2;                  % 典型接收机噪声系数1.5~2.5
 F = 10^(NF_dB/10);
 P_noise = B * k * Temperature * F;                              % 底噪功率
 %% 接收端宽带输入SNR（累积处理前）
@@ -111,7 +112,7 @@ P_noise = B * k * Temperature * F;                              % 底噪功率
 P_r = EIRP_linear * Gr_linear * lambda^2 * RCS/((4*pi)^3*Range^4*L);    % 输入功率
 
 SNR_wideband_dB = 10*log10(P_r/P_noise);
-%% 检测概率为95%，此处的虚警概率按照10^-6设置，理论值为13.9dB，这是单个网格的虚警概率
+%% 检测概率为95%，此处的虚警概率按照10^-6设置，理论值为13.9dB
 SNR_required_after_accum_dB = 14;               % 累积处理后的目标SNR
 G_required_dB = SNR_required_after_accum_dB - SNR_wideband_dB;
 G_required = 10^(G_required_dB/10);
@@ -124,8 +125,9 @@ G_actual_dB = 10*log10(B*T_accum);                % 取整后的实际相干处�
 SNR_after_one_symbol_dB = SNR_wideband_dB + 10*log10(B*T_symbol);
 SNR_after_accum_dB = SNR_wideband_dB + G_actual_dB;
 %% 雷达系统参数
-delta_R = c/2/B;                    % 距离分辨率
-delta_v = lambda/T_accum;           % 速度分辨率
+theta_rad = acos(50/466);           % 双站雷达的双站角度
+delta_R = c/(2*B*cos(theta_rad/2));   % 距离分辨率
+delta_v = lambda/(2*T_accum*cos(theta_rad/2));           % 速度分辨率
 R_bin = Range/delta_R;
 v_bin = velocity/delta_v;
 N_radar_fig = R_bin*v_bin;
@@ -135,8 +137,11 @@ range_migration = T_accum*velocity;
 range_bins = Range/delta_R;
 range_migration_bins = range_migration/delta_R;
 
-f_d = 2*velocity/lambda;
+f_d = 2*velocity*cos(theta_rad/2)/lambda;
 norm_doppler = f_d/delta_f;
+
+delay_time = Range_fighter2radar / c;
+
 velocity_bins = velocity/delta_v;
 alpha_max = ceil(norm_doppler);
 %% 直射径与反射径的相对时延近似计算
@@ -147,8 +152,8 @@ norm_tau = tau*fs;
 l_max = ceil(norm_tau);
 
 %% 直射径与反射径的相对时延近似计算
-% los_path = 480e3;      % 直射径
-% reflect_path = 460e3+40e3;
+% los_path = 466e3;      % 直射径
+% reflect_path = 466e3+100e3;
 % tau = (reflect_path-los_path)/c;
 % norm_tau = tau*fs;
 % l_max = ceil(norm_tau);
@@ -200,7 +205,7 @@ fprintf('速度对应的速度单元：%.1f  \n', velocity_bins);
 xi_v = 4;                       % 扩散间隔
 %% Ncp设计
 Ncp_low = ceil(norm_tau);
-Ncp = ceil(N/8);
+Ncp = ceil(N/32);
 %% N设计
 N_low = (2*xi_v+1)*(ceil(norm_tau)+1)*B/(B-2*f_d*(ceil(norm_tau)+1));
 %% C1设计
@@ -210,6 +215,8 @@ c1 = (2*(ceil(norm_doppler)+xi_v)+1)/(2*N);
 
 %% 保护间隔
 Q = (l_max+1)*(2*(alpha_max+xi_v)+1)-1;
+%% 系统多普勒容限
+f_d_max = alpha_max * delta_f;
 %% AFDM波形参数设计
 fprintf('=== AFDM波形参数 ===\n');
 fprintf('N = %d \n', N);

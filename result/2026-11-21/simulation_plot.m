@@ -1,18 +1,21 @@
 % close all
 % clear
 
-matFilePath = 'E:\Codex\codex-magration\result\2026-11-21\RMSE_result_20261121_160616.mat';
+% matFilePath = 'E:\Codex\codex-magration\result\2026-11-21\RMSE_result_20261121_160616.mat';
+matFilePath = './RMSE_result_20261121_160616.mat';
+
+
 load(matFilePath);
 % AFNE_delay_esti_RMSE(5) = 0.030434;
 figure;
 semilogy(para.SNR, AFNE_delay_esti_RMSE, 'b-o', 'LineWidth', 1.5);
 hold on;
 semilogy(para.SNR, RFT_delay_esti_RMSE, 'r+-', 'LineWidth', 1.5);
-% hold on;
-% semilogy(para.SNR, RFT_delay_esti_RMSE_old, 'g+-', 'LineWidth', 1.5);
+hold on;
+semilogy(para.SNR, RFT_delay_esti_RMSE_old, 'g+-', 'LineWidth', 1.5);
 grid on;
-% legend('AFNE','RFT','RFT-old');
-legend('AFNE','RFT');
+legend('AFNE','RFT','RFT-old');
+% legend('AFNE','RFT');
 xlabel('SNR (dB)');
 ylabel('Normalized Delay RMSE');
 title('Normalized Delay Estimation RMSE vs SNR');
