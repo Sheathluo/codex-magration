@@ -14,9 +14,10 @@ para = struct();
 para.c = 3e8;
 
 % 系统基本参数
-para.fc = 24e9;
+para.fc = 11.7e9;
 para.lambda = para.c/para.fc;
 para.fs_up = 10e6;              % 上采样后采样率
+% para.fs_up = 240e6;            % 上采样后采样率
 para.L = 2;                     % 过采样倍数
 para.L_delay = para.L;          % 理论模糊函数的时延维过采样倍数
 para.L_doppler = para.L;        % 理论模糊函数/接收搜索的多普勒维过采样倍数
@@ -26,7 +27,7 @@ para.B = para.fs;               % 带宽
 para.sinc_filter_len = 300;       % 插值滤波器阶数
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-para.Nsym = 500;                % 符号数/帧数
+para.Nsym = 200;                % 符号数/帧数
 add_noise_flag = true;         % 是否加噪 true  false
 para.SNR = 5;
 % 随机种子
@@ -35,16 +36,16 @@ para.SNR = 5;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % 脉冲成形参数
-para.beta = 0.35;               % RRC/RC 滚降因子
-% para.beta = 0.25;               % RRC/RC 滚降因子
+% para.beta = 0.35;               % RRC/RC 滚降因子
+para.beta = 0.25;               % RRC/RC 滚降因子
 para.N_preSuffix = 20;          % 每个 AFDM 符号前后额外保护点长度
 para.N_tapFiler = 20;           % 成形滤波器半边抽头参数
 
 % AFDM 基本参数
-para.Nc = 128;                  % 子载波数
-% para.Nc = 1024;                  % 子载波数
-para.c1 = 8 / (2 * para.Nc);    % c1
-% para.c1 = 11 / (2 * para.Nc);    % c1
+% para.Nc = 128;                  % 子载波数
+para.Nc = 1024;                  % 子载波数
+% para.c1 = 8 / (2 * para.Nc);    % c1
+para.c1 = 11 / (2 * para.Nc);    % c1
 para.c2 = 0;                    % c2
 para.Mod = 16;                  % 16-QAM
 para.mu_4 = 1.32;               % 16QAM四阶矩
@@ -158,8 +159,8 @@ algorithm.Pfa_target = 1e-3;
 
 % 模糊函数存储位置及名称
 % cachePath = './AmbiguFunc/AmbigFunc_pulsedAFDM_th_fracDelayFracDop_N128_2Nc1_8_L2_Ldelay2_Ldoppler2_v6_20251022.mat';
-cachePath = './AmbiguFunc/AmbigFunc_pulsedAFDM_N128_2Nc1_8_L2_Ldelay2_Ldoppler2_v1_20261118.mat';
-% cachePath = './AmbiguFunc/AmbigFunc_pulsedAFDM_N1024_2Nc1_11_L2_Ldelay2_Ldoppler2_v1_20261118.mat';
+% cachePath = './AmbiguFunc/AmbigFunc_pulsedAFDM_N128_2Nc1_8_L2_Ldelay2_Ldoppler2_v1_20261118.mat';
+cachePath = './AmbiguFunc/AmbigFunc_pulsedAFDM_N1024_2Nc1_11_L2_Ldelay2_Ldoppler2_v1_20261118.mat';
 
 ambigData = load(cachePath, 'AmbigFunc_pulsedAFDM_noDelayDop');
 AmbigFunc_pulsedAFDM_noDelayDop = ambigData.AmbigFunc_pulsedAFDM_noDelayDop;
