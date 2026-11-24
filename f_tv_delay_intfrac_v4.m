@@ -62,6 +62,6 @@ function y = f_tv_delay_intfrac_v4(x, tau, M)
         y(n) = sum(X_mat .* H, 1).';
 
         % 释放当前块的大矩阵，避免下一块分配时仍保留上一块的数据。
-        clear H Idx valid_mask X_mat
+        % clear H Idx valid_mask X_mat
     end
 end

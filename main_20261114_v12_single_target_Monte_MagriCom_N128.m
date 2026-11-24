@@ -40,7 +40,7 @@ para.B = para.fs;               % 带宽
 para.sinc_filter_len = 300;     % 插值滤波器阶数
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-para.Nsym = 200;                % 符号数/帧数
+para.Nsym = 500;                % 符号数/帧数
 add_noise_flag = false;         % 是否加噪 true false
 % para.SNR = -40:5:10;
 para.SNR = 5;
@@ -68,7 +68,7 @@ para.M = para.Nc;
 para.delta_f = para.B / para.Nc;    % 子载波间隔
 para.T = 1 / para.delta_f;          % 有效符号持续时间
 para.Ncp = 20;                      % 循环前缀点数(上采样前)
-if para.Nc == 1024; para.Ncp = 32; end  % 循环前缀点数(上采样前) Nc = 1024
+if para.Nc == 1024; para.Ncp = 20; end  % 循环前缀点数(上采样前) Nc = 1024
 para.Tcp = para.Ncp / para.B;       % CP持续时间
 para.T_AFDM = para.T + para.Tcp;    % AFDM符号持续时间
 para.T_symbol = (para.Nc + para.Ncp + 2 * para.N_preSuffix) * para.L / para.fs_up; % 相邻有效符号起点的实际时间间隔
