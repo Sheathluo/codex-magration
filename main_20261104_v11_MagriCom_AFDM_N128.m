@@ -16,8 +16,8 @@ para.c = 3e8;
 % 系统基本参数
 para.fc = 11.7e9;
 para.lambda = para.c/para.fc;
-% para.fs_up = 10e6;              % 上采样后采样率
-para.fs_up = 240e6;           % 上采样后采样率
+para.fs_up = 10e6;              % 上采样后采样率
+% para.fs_up = 240e6;           % 上采样后采样率
 para.L = 2;                     % 过采样倍数
 para.L_delay = para.L;          % 理论模糊函数的时延维过采样倍数
 para.L_doppler = para.L;        % 理论模糊函数/接收搜索的多普勒维过采样倍数
@@ -28,7 +28,7 @@ para.sinc_filter_len = 300;     % 插值滤波器阶数
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 para.Nsym = 500;                % 符号数/帧数
-add_noise_flag = false;          % 是否加噪 true  false
+add_noise_flag = true;          % 是否加噪 true  false
 para.SNR = 5;
 % 随机种子
 % rng('shuffle');
@@ -36,16 +36,16 @@ para.SNR = 5;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % 脉冲成形参数
-% para.beta = 0.35;             % RRC/RC 滚降因子
-para.beta = 0.25;               % RRC/RC 滚降因子
+para.beta = 0.35;             % RRC/RC 滚降因子
+% para.beta = 0.25;               % RRC/RC 滚降因子
 para.N_preSuffix = 20;          % 每个 AFDM 符号前后额外保护点长度
 para.N_tapFiler = 20;           % 成形滤波器半边抽头参数
 
 % AFDM 基本参数
-% para.Nc = 128;                 % 子载波数
-para.Nc = 1024;                  % 子载波数
-% para.c1 = 8 / (2 * para.Nc);    % c1
-para.c1 = 11 / (2 * para.Nc);    % c1
+para.Nc = 128;                 % 子载波数
+% para.Nc = 1024;                  % 子载波数
+para.c1 = 8 / (2 * para.Nc);    % c1
+% para.c1 = 11 / (2 * para.Nc);    % c1
 para.c2 = 0;                    % c2
 para.Mod = 16;                  % 16-QAM
 para.mu_4 = 1.32;               % 16QAM四阶矩
@@ -82,7 +82,7 @@ cfg.index_start = 0;            % 接收信号起始截取点
 % 感知信道目标信道参数
 cfg.Max_num_target_est = 1;       % 接收端 OMP 最多检测目标数，不一定等于真实目标数
 cfg.num_target = 1;             % 目标数
-cfg.max_nor_doppler_abs = 10;       % 接收端粗搜索最大归一化多普勒, 实际产生的多普勒是cfg.max_norDoppler-5，累积到雷达图边缘
+cfg.max_nor_doppler_abs = 15;       % 接收端粗搜索最大归一化多普勒, 实际产生的多普勒是cfg.max_norDoppler-5，累积到雷达图边缘
 cfg.max_nor_delay_no_upsample = para.Ncp - 1;
 cfg.max_nor_delay = cfg.max_nor_delay_no_upsample * para.L - 1;  % 接收端粗搜索最大归一化时延（过采样后）
 cfg.min_nor_delay = 0;                      % 接收端粗搜索最小归一化时延
@@ -99,7 +99,7 @@ cfg.random_doppler_range = [-cfg.max_nor_doppler+cfg.guard_interval,  cfg.max_no
 cfg.delay_min_gap = 2;             % 多目标时，不同目标归一化时延的最小间隔
 cfg.doppler_min_gap = 2;           % 多目标时，不同目标归一化多普勒的最小间隔
 
-cfg.flag_delayMigration = 3;                    % 1: 符号级距离徙动；2: 采样点级距离徙动；3：不徙动
+cfg.flag_delayMigration = 1;                    % 1: 符号级距离徙动；2: 采样点级距离徙动；3：不徙动
 fprintf('\n================ 徙动模式 ===================\n');
 fprintf('距离徙动模式 flag_delayMigration       = %s', delayMigrationStr(cfg.flag_delayMigration));
 fprintf('\n============================================\n');
@@ -159,8 +159,8 @@ algorithm.Pfa_target = 1e-3;
 
 % 模糊函数存储位置及名称
 % cachePath = './AmbiguFunc/AmbigFunc_pulsedAFDM_th_fracDelayFracDop_N128_2Nc1_8_L2_Ldelay2_Ldoppler2_v6_20251022.mat';
-% cachePath = './AmbiguFunc/AmbigFunc_pulsedAFDM_N128_2Nc1_8_L2_Ldelay2_Ldoppler2_v1_20261118.mat';
-cachePath = './AmbiguFunc/AmbigFunc_pulsedAFDM_N1024_2Nc1_11_L2_Ldelay2_Ldoppler2_v1_20261118.mat';
+cachePath = './AmbiguFunc/AmbigFunc_pulsedAFDM_N128_2Nc1_8_L2_Ldelay2_Ldoppler2_v1_20261118.mat';
+% cachePath = './AmbiguFunc/AmbigFunc_pulsedAFDM_N1024_2Nc1_11_L2_Ldelay2_Ldoppler2_v1_20261118.mat';
 
 ambigData = load(cachePath, 'AmbigFunc_pulsedAFDM_noDelayDop');
 AmbigFunc_pulsedAFDM_noDelayDop = ambigData.AmbigFunc_pulsedAFDM_noDelayDop;
@@ -243,17 +243,17 @@ Rx_PS_remove_GPS = f_AFDM_Rx_preprocess_v1(Rx_echo_signal, cfg, para);
 % delay_search_grid = cfg.min_nor_delay:rft_delay_step:cfg.max_nor_delay;
 % doppler_search_grid = cfg.min_nor_doppler:cfg.delta_fd:cfg.max_nor_doppler;
 
-% [delay_search_grid, doppler_search_grid] = f_RFT_searchRange_v1(para.SNR, cfg.delay_vec, ...
-%     cfg.doppler_vec, para.Nsym, cfg.min_nor_delay, cfg.max_nor_delay, cfg.min_nor_doppler, ...
-%     cfg.max_nor_doppler, algorithm.coarse_delay_search_step, algorithm.coarse_doppler_search_step);
+[delay_search_grid, doppler_search_grid] = f_RFT_searchRange_v1(para.SNR, cfg.delay_vec, ...
+    cfg.doppler_vec, para.Nsym, cfg.min_nor_delay, cfg.max_nor_delay, cfg.min_nor_doppler, ...
+    cfg.max_nor_doppler, algorithm.coarse_delay_search_step, algorithm.coarse_doppler_search_step);
 % 
 % [~, RFT_noc_paramenter_esti] = f_AFDM_RFT_v5(Rx_PS_remove_GPS, Tx_signal_PS_AFDM_eff, ...
 %     delay_search_grid, doppler_search_grid, cfg, para);
 RFT_noc_paramenter_esti = [0,0];
 
-% [~, RFT_no_paramenter_esti_v6, ~, ~] = f_AFDM_RFT_v6(Rx_PS_remove_GPS, ...
-%     Tx_signal_PS_AFDM_eff, delay_search_grid, doppler_search_grid, cfg, para);
-RFT_no_paramenter_esti_v6 = [0,0];
+[~, RFT_no_paramenter_esti_v6, ~, ~] = f_AFDM_RFT_v6(Rx_PS_remove_GPS, ...
+    Tx_signal_PS_AFDM_eff, delay_search_grid, doppler_search_grid, cfg, para);
+% RFT_no_paramenter_esti_v6 = [0,0];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 1.RFT算法-end %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 2.AFNE算法-start %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
